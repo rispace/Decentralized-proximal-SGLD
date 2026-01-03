@@ -2,7 +2,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/rispace/Decentralized-proximal-SGLD?style=for-the-badge&_=1)](https://github.com/rispace/Decentralized-proximal-SGLD/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/rispace/Decentralized-proximal-SGLD?style=for-the-badge&_=1)](https://github.com/rispace/rispace/Decentralized-proximal-SGLD/network/members)
 [![GitHub Issues](https://img.shields.io/github/issues/rispace/Decentralized-proximal-SGLD?style=for-the-badge&_=1)](https://github.com/rispace/Decentralized-proximal-SGLD/issues)
-[![License](https://img.shields.io/github/license/rispace/Decentralized-proximal-SGLD?style=for-the-badge&_=1)](https://github.com/rispace/Decentralized-proximal-SGLD/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/rispace/Decentralized-proximal-SGLD?style=for-the-badge)](LICENSE)
 
 # Decentralized Proximal Stochastic Gradient Langevin Dynamics  
 

@@ -4,7 +4,7 @@ from utils.networks import Network
 
 class DPSGLD1D:
     """
-    Decentralized Projected SGLD in one dimension
+    Decentralized Proximal SGLD in one dimension
     
     Args: 
         size_w (int): Size of the doubly stochastic matrix aka mixing matrix W
@@ -109,43 +109,48 @@ class DPSGLD1D:
 
 
 class MYSGLD1D:
+    """
+    Moreau–Yosida (indicator) based centralized SGLD in 1D.
+    Targets pi^gamma(x) ∝ exp( -U(x) - (1/(2gamma))||x - proj_K(x)||^2 ).
+    """
     def __init__(
-        self, eta, n_steps=2000, 
+        self, eta, n_steps=200,
         sigma_grad=0.5, gamma=1e-2,
         mu=1.0, beta=0.5, b=1.0,
         R=1.0, seed=None
     ):
-        self.eta=eta
-        self.n_steps=n_steps
-        self.sigma_grad=sigma_grad
-        self.gamma=gamma
-        self.mu=mu
-        self.beta=beta
-        self.b=b
-        self.R=R
+        self.eta = float(eta)
+        self.n_steps = int(n_steps)
+        self.sigma_grad = float(sigma_grad)
+        self.gamma = float(gamma)
+        self.mu = float(mu)
+        self.beta = float(beta)
+        self.b = float(b)
+        self.R = float(R)
 
-        if seed is not None:
-            np.random.seed(seed)
-        
-    
+        self.rng = np.random.default_rng(seed)
+
     def projK(self, x):
         return np.clip(x, -self.R, self.R)
-    
+
     def stochastic_gradient(self, x):
-        grad = self.mu*x + self.beta*x**3 - self.b
-        return grad + self.sigma_grad*np.random.randn()
-    
+        grad = self.mu * x + self.beta * x**3 - self.b
+        noise = self.sigma_grad * self.rng.standard_normal()
+        return grad + noise
+
     def step(self, x):
-        proximal_grad = (x - self.projK(x)) / self.gamma
-        noise = np.sqrt(2.0 * self.eta) * np.random.randn()
-        mysgld_update = x - self.eta *(self.stochastic_gradient(x) + self.proximal_gradient(x)) + noise
-        return mysgld_update
+        prox_grad = (x - self.projK(x)) / self.gamma
+        noise = np.sqrt(2.0 * self.eta) * self.rng.standard_normal()
+        x_new = x - self.eta * (self.stochastic_gradient(x) + prox_grad) + noise
+        return x_new
 
     def sample(self, x0=None):
-        x = np.random.randn() if x0 is None else float(x0)
-        chain = []
+        x = self.rng.standard_normal() if x0 is None else float(x0)
+
+        chain = np.empty(self.n_steps, dtype=float)
         for k in tqdm(range(self.n_steps)):
             x = self.step(x)
-            chain.append(x)
-        
+            chain[k] = x
+
+
         return np.array(chain)

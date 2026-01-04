@@ -43,7 +43,7 @@ class WassersteinDistance1D:
             for k in range(self.n_steps):
                 d = self.Compute_W2distance(self.history_all[k,i,0,:], Q)
                 w2dis[i].append(d)
-
+                
         for k in range(self.n_steps):
             d = self.Compute_W2distance(self.X_mean_all[k,0,:], Q)
             w2dis[self.size_w].append(d)
@@ -52,5 +52,17 @@ class WassersteinDistance1D:
             w2dis[i]=np.array(w2dis[i])
         
         return w2dis
+    
+    def W2distSingleChain(self, chain, Q):
+        chain = np.asarray(chain).reshape(-1)
+        n = len(chain)
+        
+        w2 = np.empty(n, dtype=float)
+        
+        for k in range(n):
+            w2[k] = self.Compute_W2distance(chain[:k+1], Q)
+        
+        return w2
+        
             
         

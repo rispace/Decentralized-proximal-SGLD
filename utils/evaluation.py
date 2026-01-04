@@ -54,15 +54,22 @@ class WassersteinDistance1D:
         return w2dis
     
     def W2distSingleChain(self, chain, Q):
-        chain = np.asarray(chain).reshape(-1)
-        n = len(chain)
-        
-        w2 = np.empty(n, dtype=float)
-        
-        for k in range(n):
-            w2[k] = self.Compute_W2distance(chain[:k+1], Q)
-        
-        return w2
+        """
+        chain: array of shape (T, N)  (T = n_steps)
+        returns: W2 distance per iteration, length T
+        """
+        chain = np.asarray(chain)
+
+        if chain.ndim != 2:
+            raise ValueError(f"Expected chain with shape (T,N), got shape {chain.shape}")
+
+        T = chain.shape[0]
+        w2dis = []
+        for k in range(T):
+            d = self.Compute_W2distance(chain[k, :], Q)
+            w2dis.append(d)
+
+        return np.array(w2dis)
         
             
         

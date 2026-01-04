@@ -107,19 +107,19 @@ class DPSGLD1D:
         return np.array(history_all), np.array(X_mean_all)
 
 
-
 class MYSGLD1D:
     """
     Moreau–Yosida (indicator) based centralized SGLD in 1D.
     Targets pi^gamma(x) ∝ exp( -U(x) - (1/(2gamma))||x - proj_K(x)||^2 ).
     """
     def __init__(
-        self, eta, n_steps=200,
+        self, eta, N, n_steps=200,
         sigma_grad=0.5, gamma=1e-2,
         mu=1.0, beta=0.5, b=1.0,
         R=1.0, seed=None
     ):
         self.eta = float(eta)
+        self.N = int(N)
         self.n_steps = int(n_steps)
         self.sigma_grad = float(sigma_grad)
         self.gamma = float(gamma)
@@ -139,18 +139,24 @@ class MYSGLD1D:
         return grad + noise
 
     def step(self, x):
-        prox_grad = (x - self.projK(x)) / self.gamma
-        noise = np.sqrt(2.0 * self.eta) * self.rng.standard_normal()
-        x_new = x - self.eta * (self.stochastic_gradient(x) + prox_grad) + noise
+        x = np.asarray(x, dtype=float).reshape(-1)  # shape (N,)
+        x_new = np.empty_like(x)
+
+        for n in range(self.N):
+            grad_n = self.stochastic_gradient(x[n])          # scalar grad + scalar grad-noise
+            prox_n = (x[n] - self.projK(x[n])) / self.gamma  # scalar prox
+            noise_n = np.sqrt(2.0 * self.eta) * self.rng.standard_normal()
+            x_new[n] = x[n] - self.eta * (grad_n + prox_n) + noise_n
+
         return x_new
 
     def sample(self, x0=None):
-        x = self.rng.standard_normal() if x0 is None else float(x0)
+        x = self.rng.standard_normal(self.N) if x0 is None else np.array(x0, dtype=float).reshape(-1)
 
-        chain = np.empty(self.n_steps, dtype=float)
+        chain = np.empty((self.n_steps +1, self.N))
+        chain[0] = x
         for k in tqdm(range(self.n_steps)):
             x = self.step(x)
-            chain[k] = x
-
+            chain[k + 1] = x
 
         return np.array(chain)

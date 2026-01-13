@@ -44,7 +44,7 @@ ENV/
 pip-log.txt
 pip-delete-this-directory.txt
 scratch/
-
+experiments/converted_scripts/
 # Unit test / coverage reports
 htmlcov/
 .tox/

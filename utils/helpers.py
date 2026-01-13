@@ -1,6 +1,29 @@
 import numpy as np
 
 
+def prior(dim, N, s, lp):
+    """
+    Prior distribution: Sample uniformly from the Lp ball 
+                        of radius s in R^dim.
+    """
+    s = np.power(s, lp)
+    uniform_ball = np.zeros((N, dim))
+    for n in range(N):
+        temp_uniform = np.random.uniform(0, s, size=dim)
+        temp_uniform = np.sort(temp_uniform)
+        temp_uniform = np.insert(temp_uniform, 0, 0)
+        temp_uniform = np.insert(temp_uniform, dim + 1, s)
+        for i in range(dim):
+            sign = np.random.binomial(1, 0.5)*2 - 1
+            unif = (
+                sign * np.power(
+                    temp_uniform[i+1] - temp_uniform[i], 1.0/lp
+                )
+            )
+            uniform_ball[n, i] = unif
+    return np.array(uniform_ball)
+
+
 def sample_uniform_l2_ball(dim, s, rng):
     z = rng.standard_normal(dim)
     z_norm = np.linalg.norm(z)
@@ -31,10 +54,10 @@ def sample_uniform_lp_ball(dim, s, p, rng):
         raise NotImplementedError("Only p=1 and p=2 are implemented.")
 
 
-def priors(dim, s, p, N, rng):
+def priors(dim, s, lp, N, rng):
     out = np.empty((N, dim))
     for i in range(N):
-        out[i, :] = sample_uniform_lp_ball(dim, s, p, rng)
+        out[i, :] = sample_uniform_lp_ball(dim, s, lp, rng)
     return out
 
 

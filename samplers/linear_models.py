@@ -70,7 +70,7 @@ class BayesianRegression:
         
         self.dim = self.X.shape[1]
     
-    def _dpsgld_step(self, B):
+    def _dpsgld_step(self, B, eta):
         """
         One step of DPSGLD update
         B (N, size_w, dim)
@@ -90,7 +90,7 @@ class BayesianRegression:
                         self.dim
                     )
                     B[n, i] = (
-                        temp - self.eta * (grad)
+                        temp - eta * (grad)
                         + np.sqrt(2.0 * self.eta) * noise
                     )
                 else:
@@ -99,7 +99,7 @@ class BayesianRegression:
                     )
         return B
     
-    def _mysgld_step(self, B):
+    def _mysgld_step(self, B, eta):
         """
         One step of MySGLD update
         B (N, dim)
@@ -115,7 +115,7 @@ class BayesianRegression:
                     self.dim
                 )
                 B[n] = (
-                    B[n] - self.eta * (grad)
+                    B[n] - eta * (grad)
                     + np.sqrt(2.0 * self.eta) * noise
                 )
             else:
@@ -155,7 +155,12 @@ class BayesianRegression:
                 B_mean_all.append(B_mean)
             # Update parameters using DPSGLD
             for k in tqdm(range(self.n_iteration)):
-                B = self._dpsgld_step(Betas)
+                if (k+1) % 1000 == 0:
+                    print(f"Iteration {k+1}/{self.n_iteration}")
+                    eta = self.eta / np.sqrt(k+1)
+                else:
+                    eta = self.eta
+                B = self._dpsgld_step(Betas, eta)
                 history = np.empty((self.size_w, self.dim, self.N))
                 B_mean = np.empty((self.dim, self.N))
                 for i in range(self.N):
@@ -177,7 +182,12 @@ class BayesianRegression:
             chain = np.empty((self.n_iteration+1, self.dim, self.N))
             chain[0, :] = B.T
             for k in tqdm(range(self.n_iteration)):
-                B = self._mysgld_step(B)
+                if (k+1) % 1000 == 0:
+                    print(f"Iteration {k+1}/{self.n_iteration}")
+                    eta = self.eta / np.sqrt(k+1)
+                else:
+                    eta = self.eta
+                B = self._mysgld_step(B, eta)
                 chain[k + 1, :] = B.T
             
             return np.array(chain)

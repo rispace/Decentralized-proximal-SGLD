@@ -5,13 +5,13 @@ import utils.helpers as helpers
 
 
 def gradient_BLR(
-    beta, X, y, gamma, batch_size, lp, s, rng
+    beta, X, y, gamma, batch_size, lp, s, sigma, rng
 ):
     dim = X.shape[1]
     randomidx = rng.integers(0, len(y)-1, size=int(batch_size))
     grad_f = np.zeros(shape=(dim))
     for i in randomidx:
-        grad_f -= ((y[i] - beta @ X[i]) * X[i]) / batch_size
+        grad_f -= ((y[i] - beta @ X[i]) * X[i]) / (batch_size * sigma**2)
     lp_norm = np.linalg.norm(beta, ord=lp)
     if lp_norm > s:
         grad_f += (
@@ -81,7 +81,8 @@ class BayesianRegression:
                     grad = gradient_BLR(
                         B[n, i], self.X, self.y,
                         self.gamma, self.batch_size,
-                        self.lp, self.s, self.rng
+                        self.lp, self.s, self.sigma, 
+                        self.rng
                     )
                     temp = np.zeros(shape=(self.dim))
                     for j in range(self.size_w):
@@ -109,7 +110,8 @@ class BayesianRegression:
                 grad = gradient_BLR(
                     B[n], self.X, self.y,
                     self.gamma, self.batch_size,
-                    self.lp, self.s, self.rng
+                    self.lp, self.s, self.sigma,
+                    self.rng
                 )
                 noise = self.rng.standard_normal(
                     self.dim
@@ -160,11 +162,11 @@ class BayesianRegression:
                     print(f"Iteration {k+1}/{self.n_iteration}, eta={eta}")
                 else:
                     eta = self.eta
-                B = self._dpsgld_step(Betas, eta)
+                Betas = self._dpsgld_step(Betas, eta)
                 history = np.empty((self.size_w, self.dim, self.N))
                 B_mean = np.empty((self.dim, self.N))
                 for i in range(self.N):
-                    history[:, :, i] = B[i, :, :]
+                    history[:, :, i] = Betas[i, :, :]
                 for j in range(self.dim):
                     B_mean[j, :] = np.mean(history[:, j, :], axis=0)
                 history_all.append(history)

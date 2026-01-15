@@ -91,7 +91,7 @@ class BayesianRegression:
                     )
                     B[n, i] = (
                         temp - eta * (grad)
-                        + np.sqrt(2.0 * self.eta) * noise
+                        + np.sqrt(2.0 * eta) * noise
                     )
                 else:
                     raise NotImplementedError(
@@ -116,7 +116,7 @@ class BayesianRegression:
                 )
                 B[n] = (
                     B[n] - eta * (grad)
-                    + np.sqrt(2.0 * self.eta) * noise
+                    + np.sqrt(2.0 * eta) * noise
                 )
             else:
                 raise NotImplementedError(
@@ -156,8 +156,8 @@ class BayesianRegression:
             # Update parameters using DPSGLD
             for k in tqdm(range(self.n_iteration)):
                 if (k+1) % 1000 == 0:
-                    print(f"Iteration {k+1}/{self.n_iteration}")
                     eta = self.eta / np.sqrt(k+1)
+                    print(f"Iteration {k+1}/{self.n_iteration}, eta={eta}")
                 else:
                     eta = self.eta
                 B = self._dpsgld_step(Betas, eta)
@@ -183,8 +183,8 @@ class BayesianRegression:
             chain[0, :] = B.T
             for k in tqdm(range(self.n_iteration)):
                 if (k+1) % 1000 == 0:
-                    print(f"Iteration {k+1}/{self.n_iteration}")
                     eta = self.eta / np.sqrt(k+1)
+                    print(f"Iteration {k+1}/{self.n_iteration}, eta={eta}")
                 else:
                     eta = self.eta
                 B = self._mysgld_step(B, eta)

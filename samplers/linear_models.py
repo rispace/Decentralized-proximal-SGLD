@@ -86,6 +86,44 @@ class BayesianRegression:
             raise ValueError("Data X and y must be provided.")
         
         self.dim = self.X.shape[1]
+        self.X_local, self.y_local = self._split_data_among_agents(
+            self.X, self.y, self.size_w, self.rng,
+            stratify=(self.type == "logistic")
+        )
+    
+    def _split_data_among_agents(
+        self, X, y, size_w, rng, stratify=False
+    ):
+        """
+        Returns lists: X_local[i], y_local[i]
+        Each agent gets roughly n/size_w points
+        stratify=True keeps class balance roughly equal per agent (binary y)
+        """
+        n = X.shape[0]
+        idx = np.arange(n)
+        
+        if not stratify:
+            rng.shuffle(idx)
+            splits = np.array_split(idx, size_w)
+        else:
+            # simple stratified split for binary labels 0/1
+            y = np.asarray(y)
+            idx0 = idx[y == 0]
+            idx1 = idx[y == 1]
+            rng.shuffle(idx0)
+            rng.shuffle(idx1)
+            splits0 = np.array_split(idx0, size_w)
+            splits1 = np.array_split(idx1, size_w)
+            splits = [np.concatenate(
+                (splits0[i], splits1[i])
+                ) for i in range(size_w)]
+            for s in splits:
+                rng.shuffle(s)
+        
+        X_local = [X[s] for s in splits]
+        y_local = [y[s] for s in splits]
+        
+        return X_local, y_local
     
     def _dpsgld_step(self, B):
         """
@@ -96,17 +134,23 @@ class BayesianRegression:
             for i in range(self.size_w):
                 if self.type == "linear":
                     grad = gradient_Bayesian_LinearRegression(
-                        B[n, i], self.X, self.y,
+                        B[n, i], self.X_local[i], self.y_local[i],
                         self.gamma, self.batch_size,
                         self.lp, self.s, self.sigma, 
                         self.rng
                     )
+                    n_total = self.y.shape[0]
+                    n_i = self.y_local[i].shape[0]
+                    grad = (n_total / n_i) * grad
                 elif self.type == "logistic":
                     grad = gradient_Bayesian_LogisticRegression(
-                        B[n, i], self.X, self.y,
+                        B[n, i], self.X_local[i], self.y_local[i],
                         self.gamma, self.batch_size,
                         self.lp, self.s, self.rng
                     )
+                    n_total = self.y.shape[0]
+                    n_i = self.y_local[i].shape[0]
+                    grad = (n_total / n_i) * grad
                 else:
                     raise NotImplementedError(
                         "Only linear regression is implemented."

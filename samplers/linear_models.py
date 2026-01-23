@@ -4,11 +4,11 @@ from utils.networks import Network
 import utils.helpers as helpers
 
 
-def gradient_BLR(
+def gradient_Bayesian_LinearRegression(
     beta, X, y, gamma, batch_size, lp, s, sigma, rng
 ):
     dim = X.shape[1]
-    randomidx = rng.integers(0, len(y)-1, size=int(batch_size))
+    randomidx = rng.integers(0, len(y), size=int(batch_size))
     grad_f = np.zeros(shape=(dim))
     for i in randomidx:
         grad_f -= ((y[i] - beta @ X[i]) * X[i]) / (batch_size * sigma**2)
@@ -18,7 +18,24 @@ def gradient_BLR(
             beta - helpers.project_onto_lp_ball(beta, lp, s)
         ) / gamma
     return grad_f             
-    
+
+
+def gradient_Bayesian_LogisticRegression(
+    beta, X, y, gamma, batch_size, lp, s, rng
+):
+    idx = rng.integers(0, len(y), size=int(batch_size))
+    Xi = X[idx]
+    yi = y[idx]
+    z = Xi @ beta 
+    sig_z = 1.0 / (1.0 + np.exp(-z))
+    grad = Xi.T @ (sig_z - yi)
+    lp_norm = np.linalg.norm(beta, ord=lp)
+    if lp_norm > s:
+        grad += (
+            beta - helpers.project_onto_lp_ball(beta, lp, s)
+        ) / gamma
+    return grad
+
 
 class BayesianRegression:
     def __init__(
@@ -70,7 +87,7 @@ class BayesianRegression:
         
         self.dim = self.X.shape[1]
     
-    def _dpsgld_step(self, B, eta):
+    def _dpsgld_step(self, B):
         """
         One step of DPSGLD update
         B (N, size_w, dim)
@@ -78,52 +95,60 @@ class BayesianRegression:
         for n in range(self.N):
             for i in range(self.size_w):
                 if self.type == "linear":
-                    grad = gradient_BLR(
+                    grad = gradient_Bayesian_LinearRegression(
                         B[n, i], self.X, self.y,
                         self.gamma, self.batch_size,
                         self.lp, self.s, self.sigma, 
                         self.rng
                     )
-                    temp = np.zeros(shape=(self.dim))
-                    for j in range(self.size_w):
-                        temp = temp + self.W[i, j] * B[n, j]
-                    noise = self.rng.standard_normal(
-                        self.dim
-                    )
-                    B[n, i] = (
-                        temp - eta * (grad)
-                        + np.sqrt(2.0 * eta) * noise
+                elif self.type == "logistic":
+                    grad = gradient_Bayesian_LogisticRegression(
+                        B[n, i], self.X, self.y,
+                        self.gamma, self.batch_size,
+                        self.lp, self.s, self.rng
                     )
                 else:
                     raise NotImplementedError(
                         "Only linear regression is implemented."
                     )
+                temp = np.zeros(shape=(self.dim))
+                for j in range(self.size_w):
+                    temp = temp + self.W[i, j] * B[n, j]
+                noise = self.rng.standard_normal(self.dim)
+                B[n, i] = (
+                    temp - self.eta * (grad)
+                    + np.sqrt(2.0 * self.eta) * noise
+                )
         return B
     
-    def _mysgld_step(self, B, eta):
+    def _mysgld_step(self, B):
         """
         One step of MySGLD update
         B (N, dim)
         """
         for n in range(self.N):
             if self.type == "linear":
-                grad = gradient_BLR(
+                grad = gradient_Bayesian_LinearRegression(
                     B[n], self.X, self.y,
                     self.gamma, self.batch_size,
                     self.lp, self.s, self.sigma,
                     self.rng
                 )
-                noise = self.rng.standard_normal(
-                    self.dim
-                )
-                B[n] = (
-                    B[n] - eta * (grad)
-                    + np.sqrt(2.0 * eta) * noise
+            elif self.type == "logistic":
+                grad = gradient_Bayesian_LogisticRegression(
+                    B[n], self.X, self.y,
+                    self.gamma, self.batch_size,
+                    self.lp, self.s, self.rng
                 )
             else:
                 raise NotImplementedError(
                     "Only linear regression is implemented."
                 )
+            noise = self.rng.standard_normal(self.dim)
+            B[n] = (
+                B[n] - self.eta * (grad)
+                + np.sqrt(2.0 * self.eta) * noise
+            )
         return B
     
     def sample_parameters(
@@ -157,12 +182,7 @@ class BayesianRegression:
                 B_mean_all.append(B_mean)
             # Update parameters using DPSGLD
             for k in tqdm(range(self.n_iteration)):
-                if (k+1) % 1000 == 0:
-                    eta = self.eta / np.sqrt(k+1)
-                    print(f"Iteration {k+1}/{self.n_iteration}, eta={eta}")
-                else:
-                    eta = self.eta
-                Betas = self._dpsgld_step(Betas, eta)
+                Betas = self._dpsgld_step(Betas)
                 history = np.empty((self.size_w, self.dim, self.N))
                 B_mean = np.empty((self.dim, self.N))
                 for i in range(self.N):
@@ -173,6 +193,7 @@ class BayesianRegression:
                 B_mean_all.append(B_mean)
             
             return np.array(history_all), np.array(B_mean_all)
+        
         elif method == "mysgld":
             # Initialize 
             B = helpers.priors(
@@ -184,12 +205,7 @@ class BayesianRegression:
             chain = np.empty((self.n_iteration+1, self.dim, self.N))
             chain[0, :] = B.T
             for k in tqdm(range(self.n_iteration)):
-                if (k+1) % 1000 == 0:
-                    eta = self.eta / np.sqrt(k+1)
-                    print(f"Iteration {k+1}/{self.n_iteration}, eta={eta}")
-                else:
-                    eta = self.eta
-                B = self._mysgld_step(B, eta)
+                B = self._mysgld_step(B)
                 chain[k + 1, :] = B.T
             
             return np.array(chain)

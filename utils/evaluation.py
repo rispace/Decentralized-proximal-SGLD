@@ -175,3 +175,42 @@ class Wasserstein2Distance:
             w2dis[i] = np.array(w2dis[i])
 
         return w2dis
+
+
+class AccuracyEvaluator:
+    def __init__(self, chain):
+        """  
+        Accepts chain of shape (T, w, dim, N) or (T, dim, N)
+        where 
+            T: Number of iterations 
+            w: Size of the communication matrix (inherited from
+               the chain)
+            dim: Dimension of the sampling problem
+            N: Number of samples in each iteration
+        """
+        if chain.ndim == 4:
+            T, w, dim, N = chain.shape
+            # Generate and store the random indices (0 to w-1)
+            # size=T means we pick one random w for every timestep t
+            self.selected_agent = np.random.randint(0, w)
+            # Extract weights using advanced indexing
+            self.weights = chain[:, self.selected_agent, :, :]
+        else:
+            self.weights = chain
+    
+    def get_selected_agent(self):
+        return self.selected_agent
+    
+    def compute_accuracy(self, X, y):
+        """Vectorize accuracy calculation"""
+        # weights shape (T, dim, N) --> (T, N, dim)
+        w_tensor = np.transpose(self.weights, (0, 2, 1))
+        
+        # (T, N, dim) @ (dim, M) -> (T, N, M)
+        logits = np.matmul(w_tensor, X.T)
+        
+        # vectorize the predictions
+        preds = (logits >= 0).astype(int)
+        is_correct = (preds == y[None, None, :])
+        acc_per_run = np.mean(is_correct, axis=2)
+        return np.mean(acc_per_run, axis=1), np.std(acc_per_run, axis=1)

@@ -6,6 +6,8 @@ __pycache__/
 .DS_Store
 # C extensions
 *.so
+rough1.py
+rough2.ipynb
 
 # Distribution / packaging
 .Python

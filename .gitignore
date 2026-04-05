@@ -6,6 +6,7 @@ __pycache__/
 .DS_Store
 # C extensions
 *.so
+rough/
 rough1.py
 rough2.ipynb
 

@@ -6,4 +6,5 @@
 
 # Decentralized Proximal Stochastic Gradient Langevin Dynamics  
 
-Numerical Experiment
+**Abstract**  
+We propose Decentralized Proximal Stochastic Gradient Langevin Dynamics (DE-PSGLD), a decentralized Markov chain Monte Carlo (MCMC) algorithm for sampling from a log-concave probability distribution constrained to a convex domain. Constraints are enforced through a shared proximal regularization based on the Moreau–Yosida envelope, enabling unconstrained updates while preserving consistency with the target constrained posterior. We establish non-asymptotic convergence guarantees in the 2-Wasserstein distance for both individual agent iterates and their network averages. Our analysis shows that DE-PSGLD converges to a regularized Gibbs distribution and quantifies the bias introduced by the proximal approximation. We evaluate DE-PSGLD for different sampling problems on synthetic and real datasets. As the first decentralized approach for constrained domains, our algorithm exhibits fast posterior concentration and high predictive accuracy.   

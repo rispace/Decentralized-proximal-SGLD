@@ -89,14 +89,14 @@ class BayesianRegressionDPSGLD:
         for i in range(self.n_agents):
             for j in range(self.n_samples):
                 if self.type == "linear":
-                    grad = helpers.grad_BayesianLinearRegression(
+                    grad = helpers.grad_BayesianLinearRegressionDPSGLD(
                         beta[i, :, j], X[i], y[i], self.gamma,
-                        self.batch, self.lp, self.s, self.sigma, self.rng
+                        self.batch, self.lp, self.s, self.sigma, self.rng, self.n_agents
                     )
                 elif self.type == "logistic":
-                    grad = helpers.grad_BayesianLogisticRegression(
+                    grad = helpers.grad_BayesianLogisticRegressionDPSGLD(
                         beta[i, :, j], X[i], y[i], self.gamma,
-                        self.batch, self.lp, self.s, self.rng
+                        self.batch, self.lp, self.s, self.rng, self.n_agents
                     )
                 else:
                     raise NotImplementedError(
@@ -222,7 +222,9 @@ class DPSGLD1D:
         for n in range(self.n_samples):
             for i in range(self.n_agents):
                 grad = self.stochastic_gradient(X[n, i])
-                prox_grad = (X[n, i] - self.project_to_K(X[n, i])) / self.gamma
+                prox_grad = (
+                    (X[n, i] - self.project_to_K(X[n, i])) / (self.gamma * self.n_agents)
+                )
                 Langevin_noise = (
                     np.sqrt(2.0 * self.eta) * self.rng.standard_normal()
                 )

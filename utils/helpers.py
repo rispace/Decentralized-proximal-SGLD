@@ -87,6 +87,23 @@ def grad_BayesianLinearRegression(
         ) / gamma
     return grad_f
 
+def grad_BayesianLinearRegressionDPSGLD(
+    beta, X, y, gamma, batch, lp, s, sigma, rng, n_agents
+):
+    dim = X.shape[1]
+    N_local = len(y)
+    randomIdx = rng.integers(0, N_local, size=batch)
+    grad_f = np.zeros(shape=(dim))
+    for i in randomIdx:
+        pred_error = y[i] - X[i] @ beta
+        grad_f -= (pred_error * X[i]) / (sigma**2 * batch)
+    lp_norm = np.linalg.norm(beta, ord=lp)
+    if lp_norm > s:
+        grad_f += (
+            beta - project_onto_lp_ball(beta, lp, s)
+        ) / (gamma*n_agents)
+    return grad_f
+
 
 def grad_BayesianLogisticRegression(
     beta, X, y, gamma, batch, lp, s, rng
@@ -101,4 +118,19 @@ def grad_BayesianLogisticRegression(
         grad_f += (
             beta - project_onto_lp_ball(beta, lp, s)
         ) / gamma
+    return grad_f
+
+def grad_BayesianLogisticRegressionDPSGLD(
+    beta, X, y, gamma, batch, lp, s, rng, n_agents
+):
+    idx = rng.integers(0, len(y), size=batch)
+    Xi = X[idx]
+    yi = y[idx]
+    pred = 1.0 / (1.0 + np.exp(-Xi @ beta))
+    grad_f = -Xi.T @ (yi - pred) / batch
+    lp_norm = np.linalg.norm(beta, ord=lp)
+    if lp_norm > s:
+        grad_f += (
+            beta - project_onto_lp_ball(beta, lp, s)
+        ) / (gamma * n_agents)
     return grad_f

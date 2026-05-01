@@ -9,6 +9,7 @@ __pycache__/
 rough/
 rough1.py
 rough2.ipynb
+.gitignore
 
 # Distribution / packaging
 .Python

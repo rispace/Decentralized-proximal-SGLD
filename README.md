@@ -30,8 +30,10 @@ We propose Decentralized Proximal Stochastic Gradient Langevin Dynamics (DE-PSGL
   * Disconnected
 * Implementations for:
 
-  * Bayesian logistic regression
+  * Sampling in 1d
   * Bayesian linear regression
+  * Bayesian logistic regression
+  
 * Built-in evaluation tools:
 
   * Posterior visualization
